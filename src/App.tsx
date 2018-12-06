@@ -1,5 +1,5 @@
-import React, {Component} from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import React, { Component } from 'react';
+import { Platform, StyleSheet, Text, View, SafeAreaView, FlatList } from 'react-native';
 
 const instructions = Platform.select({
 	ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
@@ -8,15 +8,41 @@ const instructions = Platform.select({
 		'Shake or press menu button for dev menu',
 });
 
+const data = [
+	{
+		author: 'stephaniewang',
+		date: '2018-10-16',
+		text: '买衣服'
+	},
+	{
+		author: 'eczn',
+		date: '2018-02-13',
+		text: '买衣服'
+	}
+]
+
 type Props = {};
 export default class App extends Component<Props> {
 	render() {
 		return (
-			<View style={styles.container}>
-				<Text style={styles.welcome}>Welcome to Gugu Todo!</Text>
-				<Text style={styles.instructions}>To get started, edit App.js</Text>
-				<Text style={styles.instructions}>{instructions}</Text>
-			</View>
+			<SafeAreaView style={styles.container}>
+				<Text style={styles.header}>Our TODO</Text>
+				<FlatList
+					style={styles.list}
+					data={data}
+					renderItem={
+						({ item, index }) => (
+							<View style={index ? styles.listItem : [styles.listItem, {marginTop: 20}]}>
+								<Text>{item.text}</Text>
+								<View style={styles.listDesc}>
+									<Text style={styles.listAuthor}>- by {item.author}</Text>
+									<Text style={styles.listDate}>{item.date}</Text>
+								</View>
+							</View>
+						)
+					}
+				/>
+			</SafeAreaView>
 		);
 	}
 }
@@ -24,14 +50,36 @@ export default class App extends Component<Props> {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		justifyContent: 'center',
-		alignItems: 'center',
 		backgroundColor: '#F5FCFF',
 	},
-	welcome: {
-		fontSize: 20,
-		textAlign: 'center',
-		margin: 10,
+	header: {
+		fontSize: 24,
+		padding: 20,
+		fontWeight: 'bold'
+	},
+	list: {
+		flex: 1,
+	},
+	listItem:{
+		paddingTop: 20,
+		paddingBottom: 20,
+		paddingLeft: 20,
+		paddingRight: 30,
+		borderBottomWidth: 1,
+		borderBottomColor: '#f2f2f2'
+	},
+	listDesc:{
+		flexDirection: 'row',
+		marginTop: 20,
+		marginLeft: 10,
+	},
+	listAuthor: {
+
+	},
+	listDate: {
+		marginLeft: 15,
+		flex: 1,
+		textAlign: "right"
 	},
 	instructions: {
 		textAlign: 'center',
