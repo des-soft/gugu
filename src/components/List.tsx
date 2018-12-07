@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import {
 	Platform, StyleSheet, Text, View, SafeAreaView, FlatList,
-	ListRenderItemInfo
+	ListRenderItem
 } from 'react-native';
 
 const instructions = Platform.select({
@@ -36,7 +36,7 @@ const data: Todo[] = [
 type Props = {};
 export default class App extends Component<Props> {
 
-	renderList = ({ item, index }: ListRenderItemInfo<Todo>) => {
+	renderList: ListRenderItem<Todo> = ({ item, index }) => {
 		return (
 			<View style={index ? styles.listItem : [styles.listItem, {marginTop: 20}]}>
 				<Text>{item.text}</Text>
