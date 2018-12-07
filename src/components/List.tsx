@@ -1,63 +1,98 @@
-import React, { Component } from 'react';
 import {
 	Platform, StyleSheet, Text, View, SafeAreaView, FlatList,
-	ListRenderItem
+	ListRenderItem, NavigatorIOS, TouchableOpacity, AlertIOS
 } from 'react-native';
 
-const instructions = Platform.select({
-	ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
-	android:
-		'Double tap R on your keyboard to reload,\n' +
-		'Shake or press menu button for dev menu',
-});
+import * as React from 'react';
+import Todo from "./Todo";
+import { Pool, TodoType } from "../TodoPool"; 
 
-export type Todo = {
-	author: string, 
-	date: string | Date, 
-	text: string, 
-	key: string
+
+type ListProps = {
+	navigator: NavigatorIOS
+};
+
+type ListState = {
+	todoList: TodoType[]
 }
 
-const data: Todo[] = [
-	{
-		author: 'stephaniewang',
-		date: '2018-10-16',
-		text: '买衣服',
-		key: 'dddd', 
-	},
-	{
-		author: 'eczn',
-		date: '2018-02-13',
-		text: '买衣服', 
-		key: 'asdas'
+export default class List extends React.Component<ListProps, ListState> {
+	constructor(props: ListProps) {
+		super(props); 
+
+		this.state = {
+			todoList: Pool.getAll()
+		}
 	}
-];
 
-type Props = {};
-export default class App extends Component<Props> {
+	onPress = (id: string) => {
+		this.props.navigator.push({
+			component: Todo, 
+			passProps: { id }
+		})
+	}
 
-	renderList: ListRenderItem<Todo> = ({ item, index }) => {
+	renderList: ListRenderItem<TodoType> = ({ item, index }) => {
 		return (
-			<View style={index ? styles.listItem : [styles.listItem, {marginTop: 20}]}>
-				<Text>{item.text}</Text>
-				<View style={styles.listDesc}>
-					<Text style={styles.listAuthor}>- by {item.author}</Text>
-					<Text style={styles.listDate}>{item.date}</Text>
+			<TouchableOpacity onPress={ e => this.onPress(item.id) }>
+				<View style={styles.listItem}>
+					<Text>{item.text}</Text>
+					<View style={styles.listDesc}>
+						<Text style={styles.listAuthor}>- by {item.author}</Text>
+						<Text style={styles.listDate}>{item.update_at}</Text>
+					</View>
 				</View>
-			</View>
+			</TouchableOpacity>
 		); 
+	}
+
+	add = () => {
+		AlertIOS.prompt(
+			'写一个 todo 吧', '嗯, 随便写写嘛',
+			// 值
+			text => {
+				Pool.push({ text }); 
+
+				this.loadList(); 
+			}
+		);
+	}
+
+	loadList() {
+		this.setState({
+			todoList: Pool.getAll()
+		})	
 	}
 
 	render() {
 		return (
-			<SafeAreaView style={ styles.container }>
-				<Text style={ styles.header }>Our TODO</Text>
+			<View style={ styles.container }>
+				<Text style={ styles.header }>Todos</Text>
 				<FlatList
-					style={ styles.list }
-					data={ data }
-					renderItem={ this.renderList }
+					style={ styles.list }		    // 样式
+					renderItem={ this.renderList }  // 组件 
+					data={ this.state.todoList }	// 数据
+					keyExtractor={ d => d.id }		// 使用 id 字段作为 key
 				/>
-			</SafeAreaView>
+
+				<SafeAreaView style={{
+					justifyContent: 'center', 
+					flexDirection: 'row',
+					marginBottom: 16
+				}}>
+					<TouchableOpacity style={{
+						borderRadius: 25,
+						borderWidth: 1,
+						borderColor: '#fff',
+						backgroundColor:'#68a0cf',
+					}} onPress={ this.add }>
+						<Text style={{
+							width: 50, lineHeight: 50, textAlign: 'center', 
+							color: '#FFF'
+						}}>添加</Text>
+					</TouchableOpacity>
+				</SafeAreaView>
+			</View>
 		);
 	}
 }
@@ -95,10 +130,5 @@ const styles = StyleSheet.create({
 		marginLeft: 15,
 		flex: 1,
 		textAlign: "right"
-	},
-	instructions: {
-		textAlign: 'center',
-		color: '#333333',
-		marginBottom: 5,
 	},
 });
