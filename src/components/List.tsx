@@ -1,11 +1,13 @@
 import {
 	Platform, StyleSheet, Text, View, SafeAreaView, FlatList,
-	ListRenderItem, NavigatorIOS, TouchableOpacity, AlertIOS
+	ListRenderItem, NavigatorIOS, TouchableOpacity, AlertIOS,
+	Modal
 } from 'react-native';
 
 import * as React from 'react';
 import Todo from "./Todo";
 import { Pool, TodoType } from "../TodoPool"; 
+import AddModal from "./AddModal"; 
 
 
 type ListProps = {
@@ -13,15 +15,18 @@ type ListProps = {
 };
 
 type ListState = {
-	todoList: TodoType[]
+	todoList: TodoType[],
+	addModalVisible: boolean
 }
 
 export default class List extends React.Component<ListProps, ListState> {
+	popUp: React.Ref<AddModal> | null = null
 	constructor(props: ListProps) {
 		super(props); 
 
 		this.state = {
-			todoList: Pool.getAll()
+			todoList: Pool.getAll(),
+			addModalVisible: false
 		}
 	}
 
@@ -46,27 +51,39 @@ export default class List extends React.Component<ListProps, ListState> {
 		); 
 	}
 
-	add = () => {
-		AlertIOS.prompt(
-			'写一个 todo 吧', '嗯, 随便写写嘛',
-			// 值
-			text => {
-				Pool.push({ text }); 
+	setRef(ref: React.Ref<AddModal>){
+        this.popUp = ref
+    }
 
-				this.loadList(); 
-			}
-		);
+	add = () => {
+		// this.setState({
+		// 	addModalVisible: true
+		// })
+		this.popUp && this.popUp.show();
+		// AlertIOS.prompt(
+		// 	'写一个 todo 吧', '嗯, 随便写写嘛',
+		// 	// 值
+		// 	text => {
+		// 		Pool.push({ text }); 
+
+		// 		this.loadList(); 
+		// 	}
+		// );
 	}
 
 	loadList() {
+		console.log('loadList')
 		this.setState({
-			todoList: Pool.getAll()
+			todoList: Pool.getAll().slice()
 		})	
 	}
 
 	render() {
 		return (
 			<View style={ styles.container }>
+				<AddModal  
+					ref={this.setRef.bind(this)}
+				></AddModal>
 				<Text style={ styles.header }>Todos</Text>
 				<FlatList
 					style={ styles.list }		    // 样式
