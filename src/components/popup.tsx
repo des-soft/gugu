@@ -14,9 +14,9 @@ export type PopUpProps = {
   modalBoxRadius: number,
   duration: number,
   onClose?: Function
+  onCloseTransitionEnd?: Function
   top?: number
   offsetTop?: number,
-  show: Function
 }
 
 export type PopUpState = {
@@ -61,7 +61,10 @@ export default class PopUp extends Component<PopUpProps, PopUpState> {
     ).start()
 
     setTimeout(
-      () => this.setState({ show: false }),
+      () => {
+        this.setState({ show: false });
+        this.props.onCloseTransitionEnd && this.props.onCloseTransitionEnd()
+      },
       this.props.duration
     )
   }
@@ -73,27 +76,22 @@ export default class PopUp extends Component<PopUpProps, PopUpState> {
   }
 
   hide() {
-    this.out()
-  }
-
-  defaultHide() {
     this.props.onClose && this.props.onClose()
     this.out()
   }
 
-
   render() {
     let { transparentIsClick, modalBoxBg, modalBoxHeight, modalBoxWidth, modalBoxRadius } = this.props
-    let backgroundColor = this.state.offset.interpolate({
+    let opacity = this.state.offset.interpolate({
       inputRange: [0, 1],
-      outputRange: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)']
+      outputRange: [0,1]
     })
     if (this.state.show) {
       return (
-        <Animated.View style={[styles.container, { height: height , backgroundColor}]}>
+        <Animated.View style={[styles.container, { height: height , opacity}]}>
           <TouchableOpacity style={{
             height: height, width
-          }} onPress={transparentIsClick && this.defaultHide.bind(this)}>
+          }} onPress={transparentIsClick && this.hide.bind(this)}>
           </TouchableOpacity>
           <Animated.View
             style={[styles.modalBox, {
@@ -121,6 +119,7 @@ const styles = StyleSheet.create({
   container: {
     width: width,
     position: 'absolute',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     top: 0,
     zIndex: 9
   },

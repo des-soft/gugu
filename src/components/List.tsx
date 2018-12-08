@@ -55,20 +55,13 @@ export default class List extends React.Component<ListProps, ListState> {
         this.popUp = ref
     }
 
-	add = () => {
-		// this.setState({
-		// 	addModalVisible: true
-		// })
+	onShowModal = () => {
 		this.popUp && this.popUp.show();
-		// AlertIOS.prompt(
-		// 	'写一个 todo 吧', '嗯, 随便写写嘛',
-		// 	// 值
-		// 	text => {
-		// 		Pool.push({ text }); 
+	}
 
-		// 		this.loadList(); 
-		// 	}
-		// );
+	onAdd = (text: string) => {
+		Pool.push({ text }); 
+		this.loadList(); 
 	}
 
 	loadList() {
@@ -82,6 +75,7 @@ export default class List extends React.Component<ListProps, ListState> {
 		return (
 			<View style={ styles.container }>
 				<AddModal  
+					onAdd={this.onAdd}
 					ref={this.setRef.bind(this)}
 				></AddModal>
 				<Text style={ styles.header }>Todos</Text>
@@ -102,7 +96,7 @@ export default class List extends React.Component<ListProps, ListState> {
 						borderWidth: 1,
 						borderColor: '#fff',
 						backgroundColor:'#68a0cf',
-					}} onPress={ this.add }>
+					}} onPress={ this.onShowModal }>
 						<Text style={{
 							width: 50, lineHeight: 50, textAlign: 'center', 
 							color: '#FFF'
