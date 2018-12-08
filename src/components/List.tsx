@@ -20,7 +20,7 @@ type ListState = {
 }
 
 export default class List extends React.Component<ListProps, ListState> {
-	popUp: React.Ref<AddModal> | null = null
+	popUp: AddModal | null = null
 	constructor(props: ListProps) {
 		super(props); 
 
@@ -51,7 +51,7 @@ export default class List extends React.Component<ListProps, ListState> {
 		); 
 	}
 
-	setRef(ref: React.Ref<AddModal>){
+	setRef(ref: AddModal){
         this.popUp = ref
     }
 
