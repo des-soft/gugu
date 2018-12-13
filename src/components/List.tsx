@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 
 import * as React from 'react';
-import Todo from "./Todo";
+import Todo from "../containers/Todo";
 import { Pool, TodoType } from "../TodoPool"; 
 import AddModal from "./AddModal"; 
 
@@ -25,16 +25,13 @@ export default class List extends React.Component<ListProps, ListState> {
 		super(props); 
 
 		this.state = {
-			todoList: Pool.getAll(),
 			addModalVisible: false
 		}
 	}
 
 	onPress = (id: string) => {
-		this.props.navigator.push({
-			component: Todo, 
-			passProps: { id }
-		})
+		this.props.onViewDetail(id);
+		this.props.navigator.push({ component: Todo })
 	}
 
 	renderList: ListRenderItem<TodoType> = ({ item, index }) => {
@@ -59,30 +56,18 @@ export default class List extends React.Component<ListProps, ListState> {
 		this.popUp && this.popUp.show();
 	}
 
-	onAdd = (text: string) => {
-		Pool.push({ text }); 
-		this.loadList(); 
-	}
-
-	loadList() {
-		console.log('loadList')
-		this.setState({
-			todoList: Pool.getAll().slice()
-		})	
-	}
-
 	render() {
 		return (
 			<View style={ styles.container }>
 				<AddModal  
-					onAdd={this.onAdd}
+					onAdd={this.props.onAdd}
 					ref={this.setRef.bind(this)}
 				></AddModal>
 				<Text style={ styles.header }>Todos</Text>
 				<FlatList
 					style={ styles.list }		    // 样式
 					renderItem={ this.renderList }  // 组件 
-					data={ this.state.todoList }	// 数据
+					data={ this.props.todoList }	// 数据
 					keyExtractor={ d => d.id }		// 使用 id 字段作为 key
 				/>
 
