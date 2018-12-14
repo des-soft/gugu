@@ -6,5 +6,6 @@ import * as crypto from "crypto-js";
  * @param key 密钥
  */
 export function hmac_sha1(content: string, key: string) {
+    // console.log('crypto.HmacSHA1(content, key)', crypto.HmacSHA1(content, key).toString()); 
     return crypto.HmacSHA1(content, key).toString(); 
 }
