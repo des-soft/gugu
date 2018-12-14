@@ -3,7 +3,6 @@ import {
 	Platform, StyleSheet, Text, View, SafeAreaView, FlatList,
 	ListRenderItem, NavigatorIOS, TouchableHighlight
 } from 'react-native';
-import { Pool, TodoType } from "../TodoPool";
 
 export type TodoProps = {
     id: string
@@ -11,17 +10,17 @@ export type TodoProps = {
 
 export default class Todo extends React.Component<TodoProps> {
     render() {
-        const todo = Pool.find(this.props.id); 
+        let todo = this.props.todo;
         if (todo) {
             return (
                 <View>
                     <Text>{ todo.text }</Text>
-                    <Text>{ this.props.id }</Text>
+                    <Text>{ todo.id }</Text>
                 </View>
             )
         } else {
             return (
-                <Text>无效的 id: { this.props.id }</Text>
+                <Text>! TODO 不存在</Text>
             )
         }
     }

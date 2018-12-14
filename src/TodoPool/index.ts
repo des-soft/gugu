@@ -1,7 +1,6 @@
 export * from "./types"; 
 
 import { TodoType, TodoTypeRaw } from "./types";
-import { Alert } from "react-native";
 
 const data: TodoType[] = [
 	{
