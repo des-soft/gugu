@@ -1,13 +1,14 @@
 import {
 	Platform, StyleSheet, Text, View, SafeAreaView, FlatList,
 	ListRenderItem, NavigatorIOS, TouchableOpacity, AlertIOS,
-	Modal
+	Modal, Image
 } from 'react-native';
 
 import * as React from 'react';
 import Todo from "../containers/Todo";
 import { Pool, TodoType } from "../TodoPool"; 
 import AddModal from "./AddModal"; 
+import Setting from "./Setting"; 
 
 
 type ListProps = {
@@ -15,17 +16,17 @@ type ListProps = {
 };
 
 type ListState = {
-	todoList: TodoType[],
-	addModalVisible: boolean
+	addModalVisible: boolean,
+	settingVisible: boolean
 }
 
 export default class List extends React.Component<ListProps, ListState> {
 	popUp: AddModal | null = null
 	constructor(props: ListProps) {
 		super(props); 
-
 		this.state = {
-			addModalVisible: false
+			addModalVisible: false,
+			settingVisible: false
 		}
 	}
 
@@ -59,11 +60,23 @@ export default class List extends React.Component<ListProps, ListState> {
 	render() {
 		return (
 			<View style={ styles.container }>
+				<Setting
+					visible={this.state.settingVisible}
+				/>
 				<AddModal  
 					onAdd={this.props.onAdd}
 					ref={this.setRef.bind(this)}
 				></AddModal>
-				<Text style={ styles.header }>Todos</Text>
+				<View style={{flexDirection: 'row', alignItems: 'center'}}>
+					<Text style={ styles.header }>Todos</Text>
+					<TouchableOpacity onPress={() => this.setState({settingVisible: true})}>
+						<Image source={require('../assets/setting.png')} style={{
+							width: 25,
+							height: 25,
+							marginRight: 20
+						}} />
+					</TouchableOpacity>
+				</View>
 				<FlatList
 					style={ styles.list }		    // 样式
 					renderItem={ this.renderList }  // 组件 
@@ -99,6 +112,7 @@ const styles = StyleSheet.create({
 		backgroundColor: '#F5FCFF',
 	},
 	header: {
+		flex: 1,
 		fontSize: 24,
 		padding: 20,
 		fontWeight: 'bold'

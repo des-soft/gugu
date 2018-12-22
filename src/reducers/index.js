@@ -4,7 +4,7 @@ import { combineReducers } from 'redux'
 export default combineReducers({
   todoList: function (state = Pool.getAll(), action) {
     if (action.type === 'CHANGE_TODO_LIST') {
-      return action.todoList;
+      return Pool.getAll().slice();
     }
     return state;
   },
