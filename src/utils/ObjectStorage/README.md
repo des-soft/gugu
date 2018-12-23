@@ -26,6 +26,17 @@ os.upload('/love', '❤️').then(res => {
 
     console.log('download success', res); 
     // => ❤️
+
+    return os.list('/'); 
+}).then(listResp => {
+    const { code, data } = listResp; 
+
+    // data 的类型是 { ListBucketResult: ListBucketResult }
+    // import { ListBucketResult } from "path/to/ObjectStorage"; 
+    const { ListBucketResult } = data; 
+
+    // 条目 
+    console.log(ListBucketResult.Contents); 
 }).catch(err => {
     console.error('inner err', err); 
 }); 

@@ -2,7 +2,7 @@ export type QueryObj = {
     [key: string]: string | number
 }
 
-export default function getQuery(path: string): QueryObj {
+export function getQuery(path: string): QueryObj {
     const [ , query] = path.split('?');
 
     if (!query) return {}; 

@@ -1,121 +1,12 @@
-import sha1 from "sha1"; 
-import { hmac_sha1 } from "./hmac_sha1"; 
 import { parse as xmlParse } from "fast-xml-parser";
-import getQuery from "./getQuery";
+import { getQuery, sha1 } from "./helper"; 
 import { StdHeader, StdResp, RawResp } from "./types";
+import { ObjectStorageSign } from "./ObjectStorageSign";
 
-export class ObjectStorageBase {
-    private bucket: string;
-    private APPID: number;
-    private SecretId: string; 
-    private SecretKey: string; 
-    private Where: string;
-    private scheme: string = 'https'; 
-
-    setScheme(newScheme: string) {
-        this.scheme = newScheme; 
-    }
-
-    get Host() {
-        return `${ this.bucket }-${ this.APPID }.cos.${ this.Where }.myqcloud.com`;
-    }
-
-    get FileHost() {
-        return `${ this.Where }.file.myqcloud.com`; 
-    }
-
-    /**
-     * 构造一个对象存储
-     * @param bucket      对象存储桶名
-     * @param APPID       对象存储 APPID
-     * @param SecretId    对象存储 SecretId
-     * @param SecretKey   对象存储 SecretKey
-     * @param Where       对象存储 Where (比如 'ap-guangzhou')
-     */
-    constructor(
-        bucket: string, APPID: number,
-        SecretId: string, SecretKey: string, 
-        Where: string = 'ap-guangzhou'
-    ) {
-        this.bucket = bucket;
-        this.APPID = APPID; 
-        this.SecretId = SecretId; 
-        this.SecretKey = SecretKey; 
-        this.Where = Where; 
-    }
-
-        /**
-     * 计算 headers.Authorization
-     *   - 对签名的有效起止时间加密计算值 SignKey。
-     *   - 根据固定格式组合生成 HttpString。
-     *   - 加密 HttpString，并根据固定格式组合生成 StringToSign。
-     *   - 加密 StringToSign，生成 Signature。
-     * @param method           http 方法
-     * @param body             http content
-     * @param httpUri          你要发的 url
-     * @param httpHeaders      http headers 字符串 请参考腾讯云文档, 或者 this.send
-     * @param httpParameters   http 查询参数文档 请参考腾讯云文档，或者 this.send
-     *                         此处一般没有参数因此这个值一般是 ''
-     * @param headerList       headerList 参考文档或者 this.send, 默认为 ''
-     * @param urlParamList     参考文档或者 this.send 此处也一般为 '' 
-     */
-    ofHeaderAuth(
-        method: string, 
-        httpUri: string, 
-        httpHeaders: string,
-        httpParameters: string = '', 
-        headerList: string = '',
-        urlParamList: string = ''
-    ) {
-        console.groupCollapsed('The ObjectStore Signature Info'); 
-        const ts_start = Math.floor(Date.now() / 1000); 
-        const ts_end = ts_start + 60; 
-        const signTime = `${ ts_start };${ ts_end }`; 
-        const signKey = hmac_sha1(signTime, this.SecretKey); 
-
-        // [HttpMethod]\n[HttpURI]\n[HttpParameters]\n[HttpHeaders]\n
-        const httpString = [
-            method.toLowerCase(), 
-            httpUri.split('?')[0], 
-            httpParameters, 
-            httpHeaders
-        ].join('\n') + '\n';
-
-        const sha1edHttpString = sha1(httpString); 
-
-        const stringToSign = `sha1\n${ signTime }\n${ sha1edHttpString }\n`; 
-        
-        const signature = hmac_sha1(stringToSign, signKey);
-
-        console.log('httpString Detail', [
-            'method: ' + method.toLowerCase(), 
-            'httpUri: ' + httpUri, 
-            'httpParameters: ' + httpParameters, 
-            'httpHeaders: ' + httpHeaders
-        ]); 
-
-        console.log('headers.Authorization Detail', [
-            `q-sign-algorithm=sha1`,
-            `q-ak=${ this.SecretId }`,
-            `q-sign-time=${ signTime }`,
-            `q-key-time=${ signTime }`,
-            `q-header-list=${ headerList }`,
-            `q-url-param-list=${ urlParamList }`,
-            `q-signature=${ signature }`
-        ]); 
-        
-        console.groupEnd(); 
-        return [
-            `q-sign-algorithm=sha1`,
-            `q-ak=${ this.SecretId }`,
-            `q-sign-time=${ signTime }`,
-            `q-key-time=${ signTime }`,
-            `q-header-list=${ headerList }`,
-            `q-url-param-list=${ urlParamList }`,
-            `q-signature=${ signature }`
-        ].join('&'); 
-    }
-
+/**
+ * 利用 ObjectStorageSign 并配合 fetch api 完成对腾讯云的访问
+ */
+export class ObjectStorageBase extends ObjectStorageSign {
     /**
      * 往对象存储发送请求
      * @param method   HTTP 方法
@@ -123,6 +14,7 @@ export class ObjectStorageBase {
      * @param json     对象内容，字符串形式
      */
     send(method: string, objpath: string, json: string = ''): Promise<StdResp> {
+        // Logger 
         const logGrpNam =
             ` %c [${new Date().toLocaleTimeString()}] ObjectStore%c ${ method.toUpperCase() }%c ${ objpath } `
         console.groupCollapsed(
@@ -131,8 +23,12 @@ export class ObjectStorageBase {
             `background: #6E9;color: #F00;`,
             `background: #6E9;color: #F00`
         );
+        ////////// 
+
+        // 获取 objpath 中的 query object，并转为对象
         const query = getQuery(objpath); 
 
+        // 创建 headers
         const headers: StdHeader = {
             Host: this.Host,
         }
@@ -143,8 +39,7 @@ export class ObjectStorageBase {
             headers['x-cos-content-sha1'] = sha1(json).toString(); 
         }
 
-        
-        // 利用 ofHeaderAuth 计算签名 
+        // 利用 ofHeaderAuth 计算签名 ofHeaderAuth 来自于 ObjectStorageSign 类
         headers.Authorization = this.ofHeaderAuth(
             method.toUpperCase(), 
             objpath,
