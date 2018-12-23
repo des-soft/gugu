@@ -1,13 +1,10 @@
 import sha1 from "sha1"; 
 import { hmac_sha1 } from "./hmac_sha1"; 
 import { parse as xmlParse } from "fast-xml-parser";
-import getQuery, { QueryObj } from "./getQuery";
-import { StdHeader, StdResp, RawResp, ListBucketResult } from "./types";
+import getQuery from "./getQuery";
+import { StdHeader, StdResp, RawResp } from "./types";
 
-/**
- * 该类提供了方便可用的对象存储抽象
- */
-export class ObjectStorage {
+export class ObjectStorageBase {
     private bucket: string;
     private APPID: number;
     private SecretId: string; 
@@ -47,7 +44,7 @@ export class ObjectStorage {
         this.Where = Where; 
     }
 
-    /**
+        /**
      * 计算 headers.Authorization
      *   - 对签名的有效起止时间加密计算值 SignKey。
      *   - 根据固定格式组合生成 HttpString。
@@ -228,59 +225,4 @@ export class ObjectStorage {
             data: processed
         } as StdResp
     }
-
-    /**
-     * put 一个对象到对象存储去
-     * @param objpath 在对象存储的路径 
-     * @param obj 你想传的对象 
-     */
-    upload(objpath: string, obj: object | string) {
-        return this.send('PUT', objpath, JSON.stringify(obj)); 
-    }
-
-    /**
-     * get 一个对象
-     * @param objpath 在对象存储的路径 
-     */
-    download(objpath: string) {
-        return this.send('GET', objpath); 
-    }
-
-    /**
-     * get key列表
-     * @param ns 命名空间
-     * @param number 数量, 不填为全部
-     */
-    list(ns: string, maxKeys?: number) {
-        if (ns[0] === '/') ns = ns.substring(1); 
-
-        const query: QueryObj = {
-            prefix: ns   
-        }
-
-        if (maxKeys) query['max-keys'] = maxKeys; 
-
-        // 让 ns 以 / 结束
-        const qs = getQuery.toString(query);
-
-        return this.send(
-            'GET',
-            `/?${ qs }`
-            // `/files/v2/${ this.APPID }/${ this.bucket }${ ns }?op=list&num=${ num }`
-        ).then(res => {
-            if (!res.data.ListBucketResult.Contents) {
-                res.data.ListBucketResult.Contents = []; 
-            }
-
-            if (!Array.isArray(res.data.ListBucketResult.Contents)) {
-                res.data.ListBucketResult.Contents = [res.data.ListBucketResult.Contents]; 
-            }
-
-            return {
-                code: res.code, 
-                data: res.data as { ListBucketResult: ListBucketResult }
-            }
-        })
-    }
 }
-
