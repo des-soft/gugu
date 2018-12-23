@@ -1,12 +1,20 @@
 import React, { Component } from 'react';
-import {Provider as ReduxProvider} from 'react-redux';
-import {createStore} from 'redux';
-import reducers from './reducers';
-import { Text, View,SafeAreaView, NavigatorIOS } from 'react-native';
+import { Provider as ReduxProvider } from 'react-redux';
+import { Text, View, SafeAreaView, NavigatorIOS } from 'react-native';
+import { Pool } from "./TodoPool";
+import { initTodo, initSetting, initUID } from "./actions";
+import List from "./containers/List";
+import store from "./store";
 
-import List from "./containers/List"; 
+async function initAPP(){
+	await store.dispatch(initUID())
+	let { setting } = await store.dispatch(initSetting())
+	Pool.init(setting);
+	await store.dispatch(initTodo())
+	console.log(store.getState())
+}
 
-const store = createStore(reducers);
+initAPP().catch(err => {throw err});
 
 export default function App() {
 	return (
@@ -17,10 +25,10 @@ export default function App() {
 					initialRoute={{
 						component: List, title: 'Todo List Choose'
 					}}
-					translucent={ true }
-					navigationBarHidden={ true }
+					translucent={true}
+					navigationBarHidden={true}
 					style={{ flex: 1 }}
-					interactivePopGestureEnabled={ true }
+					interactivePopGestureEnabled={true}
 				/>
 			</View>
 		</ReduxProvider>

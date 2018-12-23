@@ -11,9 +11,10 @@ export type TodoType = {
 
 export type SettingType = {
 	Bucket: string, 
-    APPID: string, 
+    APPID: number, 
     SecretId: string,
     SecretKey: string, 
+    author: string
 }
 
 export type TodoTypeRaw = Pick<TodoType, "text">

@@ -217,5 +217,12 @@ export class ObjectStorage {
     download(objpath: string) {
         return this.send('GET', objpath); 
     }
+
+    /**
+     * get key列表
+     * @param prefix 在对象存储的路径 
+     */
+    getKeys(prefix: string) {
+    }
 }
 

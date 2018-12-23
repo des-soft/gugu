@@ -5,9 +5,8 @@ import { modifyTodo, deleteTodo, finishTodo } from '../actions'
 
 
 const mapStateToProps = state => { 
-    let todoDetailId = state.todoDetailId;
     return {
-        todo: todoDetailId ? Pool.find(todoDetailId) : null,
+        todo: state.todoDetail
     }
 };
 

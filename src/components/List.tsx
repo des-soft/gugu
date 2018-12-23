@@ -6,9 +6,9 @@ import {
 
 import * as React from 'react';
 import Todo from "../containers/Todo";
-import { Pool, TodoType } from "../TodoPool"; 
-import AddModal from "./AddModal"; 
-import Setting from "./Setting"; 
+import { Pool, TodoType } from "../TodoPool";
+import AddModal from "./AddModal";
+import Setting from "../containers/Setting";
 
 
 type ListProps = {
@@ -17,16 +17,18 @@ type ListProps = {
 
 type ListState = {
 	addModalVisible: boolean,
-	settingVisible: boolean
+	settingVisible: boolean,
+	settingOpened: boolean
 }
 
 export default class List extends React.Component<ListProps, ListState> {
 	popUp: AddModal | null = null
 	constructor(props: ListProps) {
-		super(props); 
+		super(props);
 		this.state = {
 			addModalVisible: false,
-			settingVisible: false
+			settingVisible: false,
+			settingOpened: false
 		}
 	}
 
@@ -37,7 +39,7 @@ export default class List extends React.Component<ListProps, ListState> {
 
 	renderList: ListRenderItem<TodoType> = ({ item, index }) => {
 		return (
-			<TouchableOpacity onPress={ e => this.onPress(item.id) }>
+			<TouchableOpacity onPress={e => this.onPress(item.id)}>
 				<View style={styles.listItem}>
 					<Text>{item.text}</Text>
 					<View style={styles.listDesc}>
@@ -46,30 +48,38 @@ export default class List extends React.Component<ListProps, ListState> {
 					</View>
 				</View>
 			</TouchableOpacity>
-		); 
+		);
 	}
 
-	setRef(ref: AddModal){
-        this.popUp = ref
-    }
+	setRef(ref: AddModal) {
+		this.popUp = ref
+	}
 
 	onShowModal = () => {
 		this.popUp && this.popUp.show();
 	}
 
+	renderSetting = () => {
+		return this.state.settingOpened && (
+			<Setting
+				visible={this.state.settingVisible}
+				onClose={() => this.setState({ settingVisible: false })}
+				onDismiss={() => this.setState({ settingOpened: false })}
+			/>
+		)
+	}
+
 	render() {
 		return (
-			<View style={ styles.container }>
-				<Setting
-					visible={this.state.settingVisible}
-				/>
-				<AddModal  
+			<View style={styles.container}>
+				{ this.renderSetting() }
+				<AddModal
 					onAdd={this.props.onAdd}
 					ref={this.setRef.bind(this)}
 				></AddModal>
-				<View style={{flexDirection: 'row', alignItems: 'center'}}>
-					<Text style={ styles.header }>Todos</Text>
-					<TouchableOpacity onPress={() => this.setState({settingVisible: true})}>
+				<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+					<Text style={styles.header}>Todos</Text>
+					<TouchableOpacity onPress={() => this.setState({ settingVisible: true, settingOpened: true })}>
 						<Image source={require('../assets/setting.png')} style={{
 							width: 25,
 							height: 25,
@@ -78,14 +88,14 @@ export default class List extends React.Component<ListProps, ListState> {
 					</TouchableOpacity>
 				</View>
 				<FlatList
-					style={ styles.list }		    // 样式
-					renderItem={ this.renderList }  // 组件 
-					data={ this.props.todoList }	// 数据
-					keyExtractor={ d => d.id }		// 使用 id 字段作为 key
+					style={styles.list}		    // 样式
+					renderItem={this.renderList}  // 组件 
+					data={this.props.todoList}	// 数据
+					keyExtractor={d => d.id}		// 使用 id 字段作为 key
 				/>
 
 				<SafeAreaView style={{
-					justifyContent: 'center', 
+					justifyContent: 'center',
 					flexDirection: 'row',
 					marginBottom: 16
 				}}>
@@ -93,10 +103,10 @@ export default class List extends React.Component<ListProps, ListState> {
 						borderRadius: 25,
 						borderWidth: 1,
 						borderColor: '#fff',
-						backgroundColor:'#68a0cf',
-					}} onPress={ this.onShowModal }>
+						backgroundColor: '#68a0cf',
+					}} onPress={this.onShowModal}>
 						<Text style={{
-							width: 50, lineHeight: 50, textAlign: 'center', 
+							width: 50, lineHeight: 50, textAlign: 'center',
 							color: '#FFF'
 						}}>添加</Text>
 					</TouchableOpacity>
@@ -120,7 +130,7 @@ const styles = StyleSheet.create({
 	list: {
 		flex: 1,
 	},
-	listItem:{
+	listItem: {
 		paddingTop: 20,
 		paddingBottom: 20,
 		paddingLeft: 20,
@@ -128,7 +138,7 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderBottomColor: '#f2f2f2'
 	},
-	listDesc:{
+	listDesc: {
 		flexDirection: 'row',
 		marginTop: 20,
 		marginLeft: 10,
