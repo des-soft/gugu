@@ -220,7 +220,7 @@ export class ObjectStorage {
 
     /**
      * get key列表
-     * @param prefix 在对象存储的路径 
+     * @param prefix 对象前缀
      */
     getKeys(prefix: string) {
     }
