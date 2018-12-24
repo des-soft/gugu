@@ -7,17 +7,21 @@ import { SettingType } from '../TodoPool/types'
 export type SettingProps = {
     visible: boolean,
     onClose: Function,  //call on close request
-    onDismiss: Function,    //call after close animation finish
+    onDismiss: () => void,    //call after close animation finish
     setting: SettingType,
     onFinish: Function 
 }
 
 export type SettingState = {
-    form: Array<{
+    form: {
         label?: string,
         key: string,
-        value: string | number,
-    }>
+        value: string | number
+    }[]
+}
+
+export type StrObj = {
+    [key: string]: string | number
 }
 
 export default class Setting extends React.Component<SettingProps, SettingState> {
@@ -48,7 +52,8 @@ export default class Setting extends React.Component<SettingProps, SettingState>
         this.props.onFinish(this.state.form.reduce((target, item) => {
             target[item.key] = item.value;
             return target;
-        }, {}));
+        }, {} as StrObj));
+        
         this.props.onClose();
     }
 
