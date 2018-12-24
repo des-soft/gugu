@@ -1,5 +1,5 @@
 import { parse as xmlParse } from "fast-xml-parser";
-import { getQuery, sha1 } from "./helper"; 
+import { getQuery, sha1, escape2Html } from "./helper"; 
 import { StdHeader, StdResp } from "./types";
 import { ObjectStorageSign } from "./ObjectStorageSign";
 
@@ -77,7 +77,7 @@ export class ObjectStorageBase extends ObjectStorageSign {
             const headers: StdHeader = {}
                         
             ok.headers.forEach((val: string, key: string) => {
-                headers[key] = val; 
+                headers[key] = escape2Html(val); 
             }); 
 
             // 第一级处理，吧状态码和http返回的字符串收集起来
