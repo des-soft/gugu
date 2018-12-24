@@ -3,7 +3,7 @@
  * HTTP 标准头 
  */
 export type StdHeader = {
-    [key: string]: string
+    [key: string]: string; 
 }
 
 /**
@@ -11,20 +11,12 @@ export type StdHeader = {
  *   - code 状态码
  *   - data 返回响应 
  */
-export type StdResp = {
+export type StdResp<H = StdHeader> = {
     code: number, 
-    data: any
+    data: any, 
+    headers: (H & StdHeader)
 }
 
-/**
- * HTTP 生响应 
- *   - code 为 http 状态码
- *   - data 为 http response body 的文本形式
- */
-export type RawResp = {
-    code: number, 
-    data: string // 
-}
 
 /**
  * os.list 的时候的结果

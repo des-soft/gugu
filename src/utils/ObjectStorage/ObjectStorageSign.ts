@@ -66,7 +66,7 @@ export class ObjectStorageSign {
         headerList: string = '',
         urlParamList: string = ''
     ) {
-        console.groupCollapsed('The ObjectStore Signature Info'); 
+        console.group('The ObjectStore Signature Info'); 
         const ts_start = Math.floor(Date.now() / 1000); 
         const ts_end = ts_start + 60; 
         const signTime = `${ ts_start };${ ts_end }`; 

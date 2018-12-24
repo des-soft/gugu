@@ -1,6 +1,6 @@
 import { parse as xmlParse } from "fast-xml-parser";
 import { getQuery, sha1 } from "./helper"; 
-import { StdHeader, StdResp, RawResp } from "./types";
+import { StdHeader, StdResp } from "./types";
 import { ObjectStorageSign } from "./ObjectStorageSign";
 
 /**
@@ -17,7 +17,7 @@ export class ObjectStorageBase extends ObjectStorageSign {
         // Logger 
         const logGrpNam =
             ` %c [${new Date().toLocaleTimeString()}] ObjectStore%c ${ method.toUpperCase() }%c ${ objpath } `
-        console.groupCollapsed(
+        console.group(
             logGrpNam, 
             `background: #6E9;color: #222`,
             `background: #6E9;color: #F00;`,
@@ -56,7 +56,7 @@ export class ObjectStorageBase extends ObjectStorageSign {
             Object.keys(query).map(e => e.toLowerCase()).sort().join(';')
         ); 
 
-        console.groupCollapsed('Header Details');
+        console.group('Header Details');
         console.log(headers); 
         console.groupEnd();
 
@@ -67,21 +67,25 @@ export class ObjectStorageBase extends ObjectStorageSign {
             body: json, 
             headers
         }).then(ok => {
-            console.groupCollapsed(
+            console.group(
                 ` %c [${new Date().toLocaleTimeString()}] ObjectStore %c${method.toUpperCase()}%c ${objpath} ${ok.status}`,
                 `background: #222;color: #6E9`,
                 `background: #222;color: #FA9`,
                 `background: #222;color: #FA9`
             );
 
+            const headers: StdHeader = {}
+                        
+            ok.headers.forEach((val: string, key: string) => {
+                headers[key] = val; 
+            }); 
+
             // 第一级处理，吧状态码和http返回的字符串收集起来
-            return ok.text().then(data => {
-                
-                return {
-                    data: data.trim(), 
-                    code: ok.status
-                }
-            })
+            return ok.text().then(data => ({
+                data: data.trim(), 
+                code: ok.status,
+                headers            
+            }))
         }).then(
             // 二级处理，输出标准输出 
             this.responseProcess
@@ -100,7 +104,7 @@ export class ObjectStorageBase extends ObjectStorageSign {
     /**
      * 标准响应处理器
      */
-    responseProcess = (res: RawResp): StdResp => {
+    responseProcess = (res: StdResp): StdResp => {
         const { code, data } = res; 
         let processed; 
 
@@ -117,7 +121,8 @@ export class ObjectStorageBase extends ObjectStorageSign {
         
         return {
             code,
-            data: processed
-        } as StdResp
+            data: processed, 
+            headers: res.headers
+        } as StdResp<any>
     }
 }
