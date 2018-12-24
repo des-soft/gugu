@@ -1,7 +1,6 @@
-import { Pool, SettingType } from "../TodoPool";
+import { Pool, SettingType, TodoType } from "../TodoPool";
 import { SettingPool } from "../TodoPool/setting";
 import { UserPool } from "../TodoPool/user";
-import store from "../store";
 
 export function initUID() {
     return UserPool.getUID().then(UID => {
@@ -12,17 +11,24 @@ export function initUID() {
     });
 }
 
-export function initTodo() {
-    return Pool.getAll().then(list => {
+export function initTodo(list?: TodoType[]) {
+    if(list){
         return {
             type: 'CHANGE_TODO_LIST',
             list
         }
-    });
+    }else{
+        return Pool.getAll().then(list => {
+            return {
+                type: 'CHANGE_TODO_LIST',
+                list
+            }
+        });
+    }
 }
 
 export function addTodo(text: string) {
-    return Pool.push({ text }).then(list => {
+    return Pool.add({ text }).then(list => {
         return {
             type: 'CHANGE_TODO_LIST',
             list
@@ -49,7 +55,7 @@ export function deleteTodo(id: string) {
 }
 
 export function finishTodo(id: string) {
-    return Pool.delete(id).then(list => {
+    return Pool.finish(id).then(list => {
         return {
             type: 'CHANGE_TODO_LIST',
             list

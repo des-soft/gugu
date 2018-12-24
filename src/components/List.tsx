@@ -9,10 +9,14 @@ import Todo from "../containers/Todo";
 import { Pool, TodoType } from "../TodoPool";
 import AddModal from "./AddModal";
 import Setting from "../containers/Setting";
+import Tag from "./Tag";
 
 
 type ListProps = {
-	navigator: NavigatorIOS
+	navigator: NavigatorIOS,
+	onViewDetail: Function,
+	onAdd: Function,
+	todoList: TodoType[]
 };
 
 type ListState = {
@@ -28,7 +32,7 @@ export default class List extends React.Component<ListProps, ListState> {
 		this.state = {
 			addModalVisible: false,
 			settingVisible: false,
-			settingOpened: false
+			settingOpened: false	//is setting Modal render
 		}
 	}
 
@@ -41,10 +45,15 @@ export default class List extends React.Component<ListProps, ListState> {
 		return (
 			<TouchableOpacity onPress={e => this.onPress(item.id)}>
 				<View style={styles.listItem}>
-					<Text>{item.text}</Text>
+					{
+						item.data.finishedBy && <Tag text="已完成" />
+					}
+					<Text style={{
+						paddingTop: item.data.finishedBy ? 20 : 0
+					}}>{item.data.text}</Text>
 					<View style={styles.listDesc}>
-						<Text style={styles.listAuthor}>- by {item.author}</Text>
-						<Text style={styles.listDate}>{item.update_at}</Text>
+						<Text style={styles.listAuthor}>- by {item.data.author}</Text>
+						<Text style={styles.listDate}>{item.data.update_at}</Text>
 					</View>
 				</View>
 			</TouchableOpacity>
@@ -56,29 +65,45 @@ export default class List extends React.Component<ListProps, ListState> {
 	}
 
 	onShowModal = () => {
-		this.popUp && this.popUp.show();
+		if (Pool.valid) {
+			this.popUp && this.popUp.show();
+		} else {
+			AlertIOS.alert(
+				'请完善配置',
+				'COS与昵称都需要啦'
+			);
+		}
 	}
 
-	renderSetting = () => {
-		return this.state.settingOpened && (
-			<Setting
-				visible={this.state.settingVisible}
-				onClose={() => this.setState({ settingVisible: false })}
-				onDismiss={() => this.setState({ settingOpened: false })}
-			/>
-		)
+	forceSync = () => {
+		Pool.forceSync();
 	}
 
 	render() {
 		return (
 			<View style={styles.container}>
-				{ this.renderSetting() }
+				{
+					this.state.settingOpened && (
+						<Setting
+							visible={this.state.settingVisible}
+							onClose={() => this.setState({ settingVisible: false })}
+							onDismiss={() => this.setState({ settingOpened: false })}
+						/>
+					)
+				}
 				<AddModal
 					onAdd={this.props.onAdd}
 					ref={this.setRef.bind(this)}
 				></AddModal>
 				<View style={{ flexDirection: 'row', alignItems: 'center' }}>
 					<Text style={styles.header}>Todos</Text>
+					<TouchableOpacity onPress={this.forceSync}>
+						<Image source={require('../assets/sync.png')} style={{
+							width: 25,
+							height: 25,
+							marginRight: 20
+						}} />
+					</TouchableOpacity>
 					<TouchableOpacity onPress={() => this.setState({ settingVisible: true, settingOpened: true })}>
 						<Image source={require('../assets/setting.png')} style={{
 							width: 25,
@@ -95,19 +120,18 @@ export default class List extends React.Component<ListProps, ListState> {
 				/>
 
 				<SafeAreaView style={{
-					justifyContent: 'center',
 					flexDirection: 'row',
-					marginBottom: 16
 				}}>
 					<TouchableOpacity style={{
-						borderRadius: 25,
-						borderWidth: 1,
-						borderColor: '#fff',
+						flex: 1,
+						alignItems: 'center',
+						justifyContent: 'center',
+						height: 50,
 						backgroundColor: '#68a0cf',
 					}} onPress={this.onShowModal}>
 						<Text style={{
-							width: 50, lineHeight: 50, textAlign: 'center',
-							color: '#FFF'
+							color: '#fff',
+							fontSize: 16
 						}}>添加</Text>
 					</TouchableOpacity>
 				</SafeAreaView>
@@ -140,7 +164,7 @@ const styles = StyleSheet.create({
 	},
 	listDesc: {
 		flexDirection: 'row',
-		marginTop: 20,
+		marginTop: 30,
 		marginLeft: 10,
 	},
 	listAuthor: {
