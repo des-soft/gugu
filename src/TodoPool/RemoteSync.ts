@@ -85,7 +85,7 @@ export default class {
         await this.noPushingPromise;
 
         if (this.online) {
-            let data = await Pool.getAll();
+            let data = await Pool.get();
             let remotes = await this.getList(this.activeKey)
 
             remotes.forEach(remote => {
@@ -108,7 +108,7 @@ export default class {
                         if (newItem.code === 200) {
                             return {
                                 id: item.id,
-                                ETag: newItem.headers.ETag,
+                                ETag: newItem.headers.etag,
                                 data: newItem.data
                             }
                         } else {
@@ -125,7 +125,7 @@ export default class {
                         //finished
                         return {
                             id: item.id,
-                            ETag: newItem.headers.ETag,
+                            ETag: newItem.headers.etag,
                             data: newItem.data
                         }
                     }
@@ -215,7 +215,7 @@ export default class {
         let ret = await this.os.upload(`/${this.activeKey}/${obj.id}`, obj.data);
         console.log('pushAdd', ret);
         if (ret.code === 200) {
-            ret.headers.ETag && await Pool.modifyMeta(obj.id, { ETag: ret.headers.ETag })
+            ret.headers.etag && await Pool.modifyMeta(obj.id, { ETag: ret.headers.etag })
         } else {
             throw new Error('fail')
         }
@@ -226,7 +226,7 @@ export default class {
         let ret = await this.os.upload(`/${this.activeKey}/${obj.id}`, obj.data);
         console.log('pushModify', ret);
         if (ret.code === 200) {
-            ret.headers.ETag && await Pool.modifyMeta(obj.id, { ETag: ret.headers.ETag })
+            ret.headers.etag && await Pool.modifyMeta(obj.id, { ETag: ret.headers.etag })
         } else {
             throw new Error('fail')
         }
@@ -238,7 +238,7 @@ export default class {
         let deleteRet = await this.os.delete(`/${this.activeKey}/${obj.id}`);
         console.log('pushFinish', uploadRet, deleteRet);
         if (uploadRet.code === 200) {
-            uploadRet.headers.ETag && await Pool.modifyMeta(obj.id, { ETag: uploadRet.headers.ETag })
+            uploadRet.headers.etag && await Pool.modifyMeta(obj.id, { ETag: uploadRet.headers.etag })
         }
         if (uploadRet.code !== 200 || ![200, 204].includes(deleteRet.code)) {
             throw new Error('fail')
