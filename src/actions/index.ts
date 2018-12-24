@@ -18,7 +18,7 @@ export function initTodo(list?: TodoType[]) {
             list
         }
     }else{
-        return Pool.getAll().then(list => {
+        return Pool.get().then(list => {
             return {
                 type: 'CHANGE_TODO_LIST',
                 list

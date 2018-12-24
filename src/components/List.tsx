@@ -1,7 +1,6 @@
 import {
-	Platform, StyleSheet, Text, View, SafeAreaView, FlatList,
-	ListRenderItem, NavigatorIOS, TouchableOpacity, AlertIOS,
-	Modal, Image
+	StyleSheet, Text, View, SafeAreaView, FlatList,
+	ListRenderItem, NavigatorIOS, TouchableOpacity, AlertIOS, Image
 } from 'react-native';
 
 import * as React from 'react';
