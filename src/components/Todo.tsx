@@ -4,20 +4,32 @@ import {
     ListRenderItem, NavigatorIOS, TouchableHighlight, TextInput, Button, AlertIOS
 } from 'react-native';
 import Tag from './Tag'
+import {TodoType} from '../TodoPool/types'
 
 export type TodoProps = {
-    id: string
+    todo: TodoType,
+    author: string
 }
 
 export default class Todo extends React.Component<TodoProps> {
-    // constructor(props: TodoProps){
-    //     super(props);
-    // }
-    onChangeText = value => {
-        this.props.onChange(this.props.todo.id, value)
+    constructor(props: TodoProps){
+        super(props);
+        this.state = {
+            text: props.todo.data.text
+        }
     }
+    onChangeText = value => {
+        this.setState({text: value})
+    }
+    
+    onChange = () => {
+        this.props.onChange(this.props.todo.id, this.state.text.trim())
+    }
+
     onFinish = () => {
-        // this.props.onFinish(this.props.todo.id)
+        this.props.onFinish(this.props.todo.id).then(() => {
+            this.props.navigator.pop()
+        })
     }
     onDelete = () => {
         AlertIOS.alert('确定删除TODO？', '', [{
@@ -25,9 +37,18 @@ export default class Todo extends React.Component<TodoProps> {
             style: 'cancel'
         }, {
             text: '删除',
-            onPress: () => this.props.onDelete(this.props.todo.id),
+            onPress: () => {
+                this.props.onDelete(this.props.todo.id).then(() => {
+		            this.props.navigator.pop()
+                })
+            },
             style: 'destructive'
         }]);
+    }
+    onClean = () => {
+        this.props.onDelete(this.props.todo.id).then(() => {
+            this.props.navigator.pop()
+        })
     }
     render() {
         let todo = this.props.todo;
@@ -35,23 +56,34 @@ export default class Todo extends React.Component<TodoProps> {
             return (
                 <View>
                     <View style={styles.content}>
-                        <Tag text="已完成" />
+                        {
+                            todo.data.finishedBy && <Tag text="已完成" />
+                        }
                         <TextInput
                             style={{
-                                marginTop: 20
+                                marginTop: 20,
+                                height: 300
                             }}
                             onChangeText={this.onChangeText}
-                            value={todo.text}
+                            value={this.state.text}
+                            multiline={true}
+                            editable={this.props.author === todo.data.author && !todo.data.finishedBy}
+                            returnKeyType="done"
+                            onSubmitEditing={this.onChange}
+                            placeholder="写点东西嘛= ="
+                            blurOnSubmit={true}
                         />
                         <View style={styles.descWrapper}>
                             <View style={styles.descItem}>
-                                <Text style={[{ flex: 1 }, styles.descText]}>- writed by {' '} {todo.author}</Text>
-                                <Text style={styles.descText}>{todo.update_at}</Text>
+                                <Text style={[{ flex: 1 }, styles.descText]}> - writed by {todo.data.author}</Text>
+                                <Text style={styles.descText}>{todo.data.update_at}</Text>
                             </View>
-                            <View style={styles.descItem}>
-                                <Text style={[{ flex: 1 }, styles.descText]}>- finished by {' '} {todo.author}</Text>
-                                <Text style={styles.descText}>{todo.update_at}</Text>
-                            </View>
+                            {
+                                todo.data.finishedBy && <View style={styles.descItem}>
+                                    <Text style={[{ flex: 1 }, styles.descText]}> - finished by {todo.data.finishedBy}</Text>
+                                    <Text style={styles.descText}>{todo.data.finishTime}</Text>
+                                </View>
+                            }
                         </View>
                         {/* <Text>{todo.id}</Text> */}
                     </View>
@@ -64,6 +96,7 @@ export default class Todo extends React.Component<TodoProps> {
                             padding: 10
                         }}>
                             <Button
+                                disabled={!!todo.data.finishedBy}
                                 onPress={this.onFinish}
                                 title="完成"
                             />
@@ -74,11 +107,21 @@ export default class Todo extends React.Component<TodoProps> {
                             borderColor: '#f2f2f2',
                             padding: 10
                         }}>
-                            <Button
-                                onPress={this.onDelete}
-                                color="red"
-                                title="删除"
-                            />
+                            {
+                                todo.data.finishedBy ? 
+                                <Button
+                                    onPress={this.onClean}
+                                    color="red"
+                                    title="清除"
+                                /> 
+                                :
+                                <Button
+                                    disabled={this.props.author !== todo.data.author}
+                                    onPress={this.onDelete}
+                                    color="red"
+                                    title="删除"
+                                />
+                            }
                         </View>
                     </View>
                 </View>
@@ -101,7 +144,6 @@ const styles = StyleSheet.create({
     descItem: {
         flexDirection: 'row',
         paddingTop: 20,
-        paddingLeft: 10
     },
     descText: {
         color: '#333'

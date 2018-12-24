@@ -8,7 +8,7 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = dispatch => ({
-    onChange: (setting: SettingType) => dispatch(changeSetting(setting)),
+    onFinish: (setting: SettingType) => dispatch(changeSetting(setting)),
 })
 
 export default connect(

@@ -1,12 +1,12 @@
 import { connect } from 'react-redux'
 import Todo from '../components/Todo'
-import { Pool, TodoType } from "../TodoPool";
 import { modifyTodo, deleteTodo, finishTodo } from '../actions'
 
 
 const mapStateToProps = state => { 
     return {
-        todo: state.todoDetail
+        todo: state.todoDetail,
+        author: state.setting.author
     }
 };
 

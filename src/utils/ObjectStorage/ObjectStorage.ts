@@ -24,6 +24,14 @@ export class ObjectStorage extends ObjectStorageBase {
     }
 
     /**
+     * delete 一个对象
+     * @param objpath 在对象存储的路径 
+     */
+    delete(objpath: string) {
+        return this.send('DELETE', objpath); 
+    }
+
+    /**
      * get key列表
      * @param ns 命名空间
      * @param number 数量, 不填为全部

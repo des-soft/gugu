@@ -91,7 +91,7 @@ export default class PopUp extends Component<PopUpProps, PopUpState> {
         <Animated.View style={[styles.container, { height: height , opacity}]}>
           <TouchableOpacity style={{
             height: height, width
-          }} onPress={transparentIsClick && this.hide.bind(this)}>
+          }} onPress={transparentIsClick ? this.hide.bind(this) : undefined}>
           </TouchableOpacity>
           <Animated.View
             style={[styles.modalBox, {

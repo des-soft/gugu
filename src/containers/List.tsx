@@ -7,8 +7,8 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = dispatch => ({
-    onAdd: text => dispatch(addTodo(text)),
-    onViewDetail: id => dispatch(viewTodo(id))
+    onAdd: (text: string) => dispatch(addTodo(text)),
+    onViewDetail: (id: string) => dispatch(viewTodo(id)),
 })
 
 export default connect(

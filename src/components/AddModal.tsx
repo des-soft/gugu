@@ -1,11 +1,11 @@
 import * as React from 'react';
 import {
-    Text, TextInput, View, TouchableOpacity, TouchableNativeFeedbackBase
+    TextInput, View,
 } from 'react-native';
 import PopUp from './popup';
 
 export type AddModalProps = {
-    onAdd?: (text: string) => any
+    onAdd: Function
 }
 
 export type AddModalState = {
@@ -26,8 +26,8 @@ export default class AddModal extends React.Component<AddModalProps, AddModalSta
     setRef(ref: PopUp) {
         this.popUp = ref
     }
-    onAdd(){
-        if(this.state.text.trim()){
+    onAdd = () => {
+        if (this.state.text.trim()) {
             this.props.onAdd && this.props.onAdd(this.state.text);
             this.popUp && this.popUp.hide();
         }
@@ -41,7 +41,7 @@ export default class AddModal extends React.Component<AddModalProps, AddModalSta
         return (
             <PopUp
                 ref={this.setRef.bind(this)}
-                modalBoxHeight={450}
+                modalBoxHeight={300}
                 modalBoxWidth={300}
                 modalBoxRadius={5}
                 modalBoxBg='#fff'
@@ -57,31 +57,16 @@ export default class AddModal extends React.Component<AddModalProps, AddModalSta
                     }}
                 >
                     <TextInput
-                        multiline = {true}
-                        style={{height: 320}}
+                        multiline={true}
+                        style={{ flex: 1 }}
                         returnKeyType="done"
                         autoFocus={true}
                         onChangeText={(text) => this.setState({ text })}
+                        onSubmitEditing={this.onAdd}
                         value={this.state.text}
                         placeholder="写一个 todo 吧"
+                        blurOnSubmit={true}
                     />
-                    <TouchableOpacity style={{
-						borderRadius: 25,
-						borderWidth: 1,
-						borderColor: '#fff',
-                        backgroundColor:'#68a0cf',
-                        height: 50,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        position: 'absolute',
-                        bottom: 20,
-                        width: 200,
-                        marginLeft: 50,
-					}} onPress={ this.onAdd.bind(this) }>
-						<Text style={{
-							color: '#FFF'
-						}}>添加</Text>
-					</TouchableOpacity>
                 </View>
             </PopUp>
         )
