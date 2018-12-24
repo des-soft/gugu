@@ -1,6 +1,6 @@
 import {
 	StyleSheet, Text, View, SafeAreaView, FlatList,
-	ListRenderItem, NavigatorIOS, TouchableOpacity, AlertIOS, Image
+	ListRenderItem, NavigatorIOS, TouchableOpacity, AlertIOS, Image, Button
 } from 'react-native';
 
 import * as React from 'react';
@@ -9,12 +9,14 @@ import { Pool, TodoType } from "../TodoPool";
 import AddModal from "./AddModal";
 import Setting from "../containers/Setting";
 import Tag from "./Tag";
+import { formatTime } from "../utils";
 
 
 type ListProps = {
 	navigator: NavigatorIOS,
 	onViewDetail: Function,
 	onAdd: Function,
+	onDelete: Function,
 	todoList: TodoType[]
 };
 
@@ -52,7 +54,7 @@ export default class List extends React.Component<ListProps, ListState> {
 					}}>{item.data.text}</Text>
 					<View style={styles.listDesc}>
 						<Text style={styles.listAuthor}>- by {item.data.author}</Text>
-						<Text style={styles.listDate}>{item.data.update_at}</Text>
+						<Text style={styles.listDate}>{formatTime(item.data.update_at)}</Text>
 					</View>
 				</View>
 			</TouchableOpacity>
@@ -76,6 +78,14 @@ export default class List extends React.Component<ListProps, ListState> {
 
 	forceSync = () => {
 		Pool.forceSync();
+	}
+
+	cleanFinished = () => {
+		this.props.todoList.forEach(item => {
+			if(item.data.finishedBy){
+				this.props.onDelete(item.id);
+			}
+		})
 	}
 
 	render() {
@@ -111,12 +121,32 @@ export default class List extends React.Component<ListProps, ListState> {
 						}} />
 					</TouchableOpacity>
 				</View>
-				<FlatList
-					style={styles.list}		    // 样式
-					renderItem={this.renderList}  // 组件 
-					data={this.props.todoList}	// 数据
-					keyExtractor={d => d.id}		// 使用 id 字段作为 key
-				/>
+				<View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingRight: 20 }}>
+					<TouchableOpacity onPress={this.cleanFinished}>
+						<Text style={{
+							color: '#666'
+						}}>清除已完成</Text>
+					</TouchableOpacity>
+				</View>
+				{
+					this.props.todoList.length ? 
+					<FlatList
+						style={styles.list}		    // 样式
+						renderItem={this.renderList}  // 组件 
+						data={this.props.todoList}	// 数据
+						keyExtractor={d => d.id}		// 使用 id 字段作为 key
+					/>
+					:
+					<View style={{
+						flex: 1,
+						alignItems: 'center',
+						justifyContent: 'center'
+					}}>
+						<Text style={{
+							color: '#999'
+						}}>暂无TODO ~</Text>
+					</View>
+				}
 
 				<SafeAreaView style={{
 					flexDirection: 'row',
@@ -125,12 +155,12 @@ export default class List extends React.Component<ListProps, ListState> {
 						flex: 1,
 						alignItems: 'center',
 						justifyContent: 'center',
-						height: 50,
+						height: 60,
 						backgroundColor: '#68a0cf',
 					}} onPress={this.onShowModal}>
 						<Text style={{
 							color: '#fff',
-							fontSize: 16
+							fontSize: 14
 						}}>添加</Text>
 					</TouchableOpacity>
 				</SafeAreaView>
@@ -152,6 +182,7 @@ const styles = StyleSheet.create({
 	},
 	list: {
 		flex: 1,
+		marginTop: 10
 	},
 	listItem: {
 		paddingTop: 20,

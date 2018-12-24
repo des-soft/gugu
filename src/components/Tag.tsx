@@ -16,12 +16,15 @@ export default class Tag extends React.Component<TagProps> {
                 height: 18
             }}>
                 <Text style={[{
-                    borderColor: 'grey',
+                    backgroundColor: '#666',
                     borderWidth: 1,
+                    borderColor: '#666',
+                    borderRadius: 3,
+                    overflow: 'hidden',
                     position: 'absolute',
                     padding: 2,
                     fontSize: 12,
-                    color: '#666',
+                    color: '#fff',
                 }, this.props.tagStyle || {}]}>{this.props.text}</Text>
             </View>
         )

@@ -11,11 +11,12 @@ export const Pool = new (class {
     remoteSync: RemoteSync | null = null;
     osRequiredKeys: (keyof SettingType)[] = ['Bucket', 'APPID', 'SecretId', 'SecretKey']
     handlers: Function[] = []   //pull event handlers
+    idlePromise: Promise<any> = Promise.resolve()
 
     get valid() {
         return !!this.remoteSync && this.setting.author;
     }
-    
+
     init(setting: SettingType) {
         console.log('init', setting)
         //check if setting is completed and have changed
@@ -94,7 +95,7 @@ export const Pool = new (class {
      * add todo && push to remote
      */
     add(newOne: Pick<TodoData, "text">) {
-        return this.get().then(list => {
+        return this.idlePromise = this.idlePromise.then(_ => this.get().then(list => {
             let todo: TodoType = {
                 id: Date.now() + "",
                 data: {
@@ -108,14 +109,14 @@ export const Pool = new (class {
             return this.set(list).then(_ => {
                 this.remoteSync && this.remoteSync.push('ADD', todo)
             }).then(_ => list)
-        })
+        }))
     }
 
     /**
     * modify todo && push to remote
     */
     modify(id: string, newOne: Pick<TodoData, "text">) {
-        return this.get().then(list => {
+        return this.idlePromise = this.idlePromise.then(_ => this.get().then(list => {
             let idx = list.findIndex(todo => todo.id === id);
             if (~idx) {
                 list[idx].data = { ...list[idx].data, ...newOne, update_at: +new Date() }
@@ -124,14 +125,14 @@ export const Pool = new (class {
                 }).then(_ => list)
             }
             return list;
-        })
+        }))
     }
 
     /**
     * finish todo && push to remote
     */
     finish(id: string) {
-        return this.get().then(list => {
+        return this.idlePromise = this.idlePromise.then(_ => this.get().then(list => {
             let idx = list.findIndex(todo => todo.id === id);
             if (~idx) {
                 list[idx].data = {
@@ -145,14 +146,14 @@ export const Pool = new (class {
                 }).then(_ => list)
             }
             return list;
-        })
+        }))
     }
 
     /**
     * delete todo && if not finished, push to remote
     */
     delete(id: string) {
-        return this.get().then(list => {
+        return this.idlePromise = this.idlePromise.then(_ => this.get().then(list => {
             let idx = list.findIndex(todo => todo.id === id);
             if (~idx) {
                 let item = list.splice(idx, 1)[0];
@@ -161,6 +162,6 @@ export const Pool = new (class {
                 }).then(_ => list)
             }
             return list;
-        })
+        }))
     }
 })(); 

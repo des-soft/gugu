@@ -11,6 +11,7 @@ function isOnline(type) {
 
 type pushType = 'ADD' | 'MODIFY' | 'FINISH' | 'DELETE';
 
+
 export default class {
     key: string = '@remoteSyncPushStore'
     os: ObjectStorage;
@@ -111,6 +112,8 @@ export default class {
                                 ETag: newItem.headers.etag,
                                 data: newItem.data
                             }
+                        } else if (!item.data) {
+                            return {_deleted: true};
                         } else {
                             return item;
                         }

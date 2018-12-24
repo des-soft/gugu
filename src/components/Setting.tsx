@@ -86,7 +86,7 @@ export default class Setting extends React.Component<SettingProps, SettingState>
                                             <TextInput 
                                                 style={{
                                                     borderBottomWidth: 1,
-                                                    borderColor: '#999',
+                                                    borderColor: '#f2f2f2',
                                                     paddingTop: 15,
                                                     paddingBottom: 10,
                                                 }}

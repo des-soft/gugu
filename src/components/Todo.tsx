@@ -1,24 +1,32 @@
 import * as React from 'react';
 import {
-    Platform, StyleSheet, Text, View, SafeAreaView, FlatList,
-    ListRenderItem, NavigatorIOS, TouchableHighlight, TextInput, Button, AlertIOS
+    StyleSheet, Text, View, SafeAreaView, TextInput, Button, AlertIOS, NavigatorIOS, ScrollView
 } from 'react-native';
 import Tag from './Tag'
 import {TodoType} from '../TodoPool/types'
+import { formatTime } from "../utils";
 
 export type TodoProps = {
+    navigator: NavigatorIOS,
     todo: TodoType,
-    author: string
+    author: string,
+    onChange: Function,
+    onFinish: Function,
+    onDelete: Function,
 }
 
-export default class Todo extends React.Component<TodoProps> {
+export type TodoState = {
+    text: string
+}
+
+export default class Todo extends React.Component<TodoProps, TodoState> {
     constructor(props: TodoProps){
         super(props);
         this.state = {
             text: props.todo.data.text
         }
     }
-    onChangeText = value => {
+    onChangeText = (value: string) => {
         this.setState({text: value})
     }
     
@@ -54,81 +62,79 @@ export default class Todo extends React.Component<TodoProps> {
         let todo = this.props.todo;
         if (todo) {
             return (
-                <View>
-                    <View style={styles.content}>
-                        {
-                            todo.data.finishedBy && <Tag text="已完成" />
-                        }
-                        <TextInput
-                            style={{
-                                marginTop: 20,
-                                height: 300
-                            }}
-                            onChangeText={this.onChangeText}
-                            value={this.state.text}
-                            multiline={true}
-                            editable={this.props.author === todo.data.author && !todo.data.finishedBy}
-                            returnKeyType="done"
-                            onSubmitEditing={this.onChange}
-                            placeholder="写点东西嘛= ="
-                            blurOnSubmit={true}
-                        />
-                        <View style={styles.descWrapper}>
-                            <View style={styles.descItem}>
-                                <Text style={[{ flex: 1 }, styles.descText]}> - writed by {todo.data.author}</Text>
-                                <Text style={styles.descText}>{todo.data.update_at}</Text>
-                            </View>
+                <SafeAreaView style={{flex: 1}}>
+                    <ScrollView style={{flex: 1}}>
+                        <View style={styles.content}>
                             {
-                                todo.data.finishedBy && <View style={styles.descItem}>
-                                    <Text style={[{ flex: 1 }, styles.descText]}> - finished by {todo.data.finishedBy}</Text>
-                                    <Text style={styles.descText}>{todo.data.finishTime}</Text>
-                                </View>
+                                todo.data.finishedBy && <Tag text="已完成" />
                             }
-                        </View>
-                        {/* <Text>{todo.id}</Text> */}
-                    </View>
-                    <View style={{
-                        marginTop: 20
-                    }}>
-                        <View style={{
-                            borderTopWidth: 1,
-                            borderTopColor: '#f2f2f2',
-                            padding: 10
-                        }}>
-                            <Button
-                                disabled={!!todo.data.finishedBy}
-                                onPress={this.onFinish}
-                                title="完成"
+                            <TextInput
+                                style={{
+                                    marginTop: todo.data.finishedBy ? 20 : 0,
+                                    height: 300
+                                }}
+                                onChangeText={this.onChangeText}
+                                value={this.state.text}
+                                multiline={true}
+                                editable={this.props.author === todo.data.author && !todo.data.finishedBy}
+                                returnKeyType="done"
+                                onSubmitEditing={this.onChange}
+                                placeholder="写点东西嘛= ="
+                                blurOnSubmit={true}
                             />
+                            <View style={styles.descWrapper}>
+                                <View style={styles.descItem}>
+                                    <Text style={[{ flex: 1 }, styles.descText]}>writed by {todo.data.author}</Text>
+                                    <Text style={styles.descText}>{formatTime(todo.data.update_at)}</Text>
+                                </View>
+                                {
+                                    todo.data.finishedBy && todo.data.finishTime && <View style={styles.descItem}>
+                                        <Text style={[{ flex: 1 }, styles.descText]}>finished by {todo.data.finishedBy}</Text>
+                                        <Text style={styles.descText}>{formatTime(todo.data.finishTime)}</Text>
+                                    </View>
+                                }
+                            </View>
                         </View>
                         <View style={{
-                            borderTopWidth: 1,
-                            borderBottomWidth: 1,
-                            borderColor: '#f2f2f2',
-                            padding: 10
+                            marginTop: 20
                         }}>
-                            {
-                                todo.data.finishedBy ? 
+                            <View style={{
+                                borderTopWidth: 1,
+                                borderTopColor: '#f2f2f2',
+                                padding: 10
+                            }}>
                                 <Button
-                                    onPress={this.onClean}
-                                    color="red"
-                                    title="清除"
-                                /> 
-                                :
-                                <Button
-                                    disabled={this.props.author !== todo.data.author}
-                                    onPress={this.onDelete}
-                                    color="red"
-                                    title="删除"
+                                    disabled={!!todo.data.finishedBy}
+                                    onPress={this.onFinish}
+                                    title="完成"
                                 />
-                            }
+                            </View>
+                            <View style={{
+                                borderTopWidth: 1,
+                                borderBottomWidth: 1,
+                                borderColor: '#f2f2f2',
+                                padding: 10
+                            }}>
+                                {
+                                    todo.data.finishedBy ? 
+                                    <Button
+                                        onPress={this.onClean}
+                                        color="red"
+                                        title="清除"
+                                    /> 
+                                    :
+                                    <Button
+                                        disabled={this.props.author !== todo.data.author}
+                                        onPress={this.onDelete}
+                                        color="red"
+                                        title="删除"
+                                    />
+                                }
+                            </View>
                         </View>
-                    </View>
-                </View>
-            )
-        } else {
-            return (
-                <Text>! TODO 不存在</Text>
+                        {/* <SafeAreaView><Text>{todo.id}</Text></SafeAreaView> */}
+                    </ScrollView>
+                </SafeAreaView>
             )
         }
     }
