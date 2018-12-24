@@ -144,7 +144,7 @@ export default class List extends React.Component<ListProps, ListState> {
 					}}>
 						<Text style={{
 							color: '#999'
-						}}>暂无TODO ~</Text>
+						}}>没有TODO哦 ~</Text>
 					</View>
 				}
 
