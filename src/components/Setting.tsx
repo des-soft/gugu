@@ -15,7 +15,7 @@ export type SettingProps = {
 export type SettingState = {
     form: {
         label?: string,
-        key: string,
+        key: keyof SettingType, // 等价于 "Bucket" | "APPID" | "SecretId" | "SecretKey" | "author"
         value: string | number
     }[]
 }
