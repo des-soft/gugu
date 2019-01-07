@@ -79,16 +79,18 @@ export const Pool = new (class {
     }
 
     modifyMeta(id: string, newOne: Partial<TodoType>) {
-        return this.get().then(list => {
+        return this.idlePromise = this.idlePromise.then(_ => this.get().then(list => {
             let idx = list.findIndex(todo => todo.id === id);
             if (~idx) {
-                list[idx] = { ...list[idx], ...newOne }
-                return this.set(list).then(_ => {
-                    return list
-                })
+                list[idx] = { 
+                    ...list[idx], 
+                    ...newOne 
+                }
+                return this.set(list).then(_ => list)
             }
+            console.log('modifyMeta', '找不到id', id);
             return list;
-        })
+        }))
     }
 
     /**
@@ -107,8 +109,9 @@ export const Pool = new (class {
             }
             list.push(todo);
             return this.set(list).then(_ => {
-                this.remoteSync && this.remoteSync.push('ADD', todo)
-            }).then(_ => list)
+                this.remoteSync && this.remoteSync.push('ADD', todo);
+                return list;
+            })
         }))
     }
 
@@ -119,11 +122,17 @@ export const Pool = new (class {
         return this.idlePromise = this.idlePromise.then(_ => this.get().then(list => {
             let idx = list.findIndex(todo => todo.id === id);
             if (~idx) {
-                list[idx].data = { ...list[idx].data, ...newOne, update_at: +new Date() }
+                list[idx].data = { 
+                    ...list[idx].data, 
+                    ...newOne, 
+                    update_at: +new Date() 
+                }
                 return this.set(list).then(_ => {
                     this.remoteSync && this.remoteSync.push('MODIFY', list[idx])
-                }).then(_ => list)
+                    return list;
+                })
             }
+            console.log('modify', '找不到id', id);
             return list;
         }))
     }
@@ -136,15 +145,16 @@ export const Pool = new (class {
             let idx = list.findIndex(todo => todo.id === id);
             if (~idx) {
                 list[idx].data = {
-                    ...list[idx].data, ...{
-                        finishedBy: this.setting.author,
-                        finishTime: +new Date()
-                    }
+                    ...list[idx].data, 
+                    finishedBy: this.setting.author,
+                    finishTime: +new Date()
                 }
                 return this.set(list).then(_ => {
                     this.remoteSync && this.remoteSync.push('FINISH', list[idx])
-                }).then(_ => list)
+                    return list;
+                });
             }
+            console.log('finish', '找不到id', id);
             return list;
         }))
     }
@@ -159,8 +169,10 @@ export const Pool = new (class {
                 let item = list.splice(idx, 1)[0];
                 return this.set(list).then(_ => {
                     this.remoteSync && !item.data.finishedBy && this.remoteSync.push('DELETE', item)
-                }).then(_ => list)
+                    return list;
+                });
             }
+            console.log('delete', '找不到id', id);
             return list;
         }))
     }

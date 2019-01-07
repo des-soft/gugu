@@ -1,6 +1,6 @@
 import {
 	StyleSheet, Text, View, SafeAreaView, FlatList,
-	ListRenderItem, NavigatorIOS, TouchableOpacity, AlertIOS, Image, Button
+	ListRenderItem, NavigatorIOS, TouchableOpacity, AlertIOS, Image, Animated, Easing
 } from 'react-native';
 
 import * as React from 'react';
@@ -10,7 +10,6 @@ import AddModal from "./AddModal";
 import Setting from "../containers/Setting";
 import Tag from "./Tag";
 import { formatTime } from "../utils";
-
 
 type ListProps = {
 	navigator: NavigatorIOS,
@@ -23,28 +22,78 @@ type ListProps = {
 type ListState = {
 	addModalVisible: boolean,
 	settingVisible: boolean,
-	settingOpened: boolean
+	settingRender: boolean,
+	forceSyncRotation: Animated.Value
 }
 
 export default class List extends React.Component<ListProps, ListState> {
-	popUp: AddModal | null = null
+	forceSyncing: boolean = false;
+
 	constructor(props: ListProps) {
 		super(props);
 		this.state = {
 			addModalVisible: false,
 			settingVisible: false,
-			settingOpened: false	//is setting Modal render
+			settingRender: false,
+			forceSyncRotation: new Animated.Value(0),
 		}
 	}
 
-	onPress = (id: string) => {
+	onViewDetail = (id: string) => {
 		this.props.onViewDetail(id);
 		this.props.navigator.push({ component: Todo })
 	}
 
+	onAdd = (text: string) => {
+		this.setState({ addModalVisible: false })
+		this.props.onAdd(text);
+	}
+
+	onShowADD = () => {
+		if (Pool.valid) {
+			this.setState({
+				addModalVisible: true
+			})
+		} else {
+			AlertIOS.alert(
+				'请完善配置',
+				'COS与昵称都需要啦'
+			);
+		}
+	}
+
+	forceSync = () => {
+		if(!this.forceSyncing) {
+			this.forceSyncing = true;
+
+			Pool.forceSync();
+
+			Animated.timing(
+				this.state.forceSyncRotation,
+				{
+					duration: 500,
+					toValue: 180
+				}
+			).start(() => {
+				this.forceSyncing = false;
+				this.setState({
+					forceSyncRotation: new Animated.Value(0),
+				})
+			})
+		}
+	}
+
+	// cleanFinished = () => {
+	// 	this.props.todoList.forEach(item => {
+	// 		if(item.data.finishedBy){
+	// 			this.props.onDelete(item.id);
+	// 		}
+	// 	})
+	// }
+
 	renderList: ListRenderItem<TodoType> = ({ item, index }) => {
 		return (
-			<TouchableOpacity onPress={e => this.onPress(item.id)}>
+			<TouchableOpacity onPress={e => this.onViewDetail(item.id)}>
 				<View style={styles.listItem}>
 					{
 						item.data.finishedBy && <Tag text="已完成" />
@@ -61,59 +110,38 @@ export default class List extends React.Component<ListProps, ListState> {
 		);
 	}
 
-	setRef(ref: AddModal) {
-		this.popUp = ref
-	}
-
-	onShowModal = () => {
-		if (Pool.valid) {
-			this.popUp && this.popUp.show();
-		} else {
-			AlertIOS.alert(
-				'请完善配置',
-				'COS与昵称都需要啦'
-			);
-		}
-	}
-
-	forceSync = () => {
-		Pool.forceSync();
-	}
-
-	cleanFinished = () => {
-		this.props.todoList.forEach(item => {
-			if(item.data.finishedBy){
-				this.props.onDelete(item.id);
-			}
-		})
-	}
-
 	render() {
 		return (
 			<View style={styles.container}>
 				{
-					this.state.settingOpened && (
-						<Setting
-							visible={this.state.settingVisible}
-							onClose={() => this.setState({ settingVisible: false })}
-							onDismiss={() => this.setState({ settingOpened: false })}
-						/>
-					)
+					this.state.settingRender && 
+					<Setting
+						visible={this.state.settingVisible}
+						onClose={() => this.setState({ settingVisible: false })}	//触发关闭回调
+						onDismiss={() => this.setState({ settingRender: false })}
+					/>
 				}
 				<AddModal
-					onAdd={this.props.onAdd}
-					ref={this.setRef.bind(this)}
+					visible={this.state.addModalVisible}
+					onClose={() => this.setState({ addModalVisible: false })}	//触发关闭回调
+					onAdd={this.onAdd}
 				></AddModal>
 				<View style={{ flexDirection: 'row', alignItems: 'center' }}>
 					<Text style={styles.header}>Todos</Text>
 					<TouchableOpacity onPress={this.forceSync}>
-						<Image source={require('../assets/sync.png')} style={{
+						<Animated.Image source={require('../assets/sync.png')} style={{
 							width: 25,
 							height: 25,
-							marginRight: 20
+							marginRight: 20,
+							transform: [{
+								rotateZ: this.state.forceSyncRotation.interpolate({
+									inputRange: [0, 180],
+                  					outputRange: ['0deg', '180deg']
+								})
+							}]
 						}} />
 					</TouchableOpacity>
-					<TouchableOpacity onPress={() => this.setState({ settingVisible: true, settingOpened: true })}>
+					<TouchableOpacity onPress={() => this.setState({ settingVisible: true, settingRender: true })}>
 						<Image source={require('../assets/setting.png')} style={{
 							width: 25,
 							height: 25,
@@ -121,13 +149,13 @@ export default class List extends React.Component<ListProps, ListState> {
 						}} />
 					</TouchableOpacity>
 				</View>
-				<View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingRight: 20 }}>
+				{/* <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingRight: 20 }}>
 					<TouchableOpacity onPress={this.cleanFinished}>
 						<Text style={{
 							color: '#666'
 						}}>清除已完成</Text>
 					</TouchableOpacity>
-				</View>
+				</View> */}
 				{
 					this.props.todoList.length ? 
 					<FlatList
@@ -157,7 +185,7 @@ export default class List extends React.Component<ListProps, ListState> {
 						justifyContent: 'center',
 						height: 60,
 						backgroundColor: '#68a0cf',
-					}} onPress={this.onShowModal}>
+					}} onPress={this.onShowADD}>
 						<Text style={{
 							color: '#fff',
 							fontSize: 14

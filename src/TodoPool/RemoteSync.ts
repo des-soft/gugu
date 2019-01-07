@@ -1,15 +1,23 @@
 export * from "./types";
 
 import { TodoType, TodoTypeRaw, SettingType } from "./types";
-import { AsyncStorage, NetInfo } from "react-native"
-import { ObjectStorage, ListBucketResult } from "../utils/ObjectStorage"
+import { AsyncStorage, NetInfo, ConnectionInfo, NetInfoStatic, ConnectionType } from "react-native"
+import { ObjectStorage, ListBucketResult, ContentsType } from "../utils/ObjectStorage"
 import { Pool } from "./index"
+import Todo from "../components/Todo";
 
-function isOnline(type) {
+function isOnline(type: any) {
     return type !== 'none'
 }
 
 type pushType = 'ADD' | 'MODIFY' | 'FINISH' | 'DELETE';
+
+type SyncCallback = (result: TodoType[]) => void
+
+export type cacheQueueItem = {
+    type: pushType,
+    todo: TodoType
+}
 
 
 export default class {
@@ -18,8 +26,8 @@ export default class {
     online: boolean | null = null;
     readyPromise: Promise<void> | null;
     noPushingPromise: Promise<any> = Promise.resolve();
-    callback: Function | void = undefined;
-    pollTimer = null;
+    callback: SyncCallback | void = undefined;
+    pollTimer: NodeJS.Timeout | null = null;
     activeKey = 'active';
     finishedKey = 'finished';
     enableCache: boolean = true;
@@ -31,23 +39,30 @@ export default class {
         !this.enableCache && this.set([])
     }
 
-    onConnectionChange = e => {
+    onConnectionChange = (e: ConnectionType | ConnectionInfo) => {
         this.setNetInfo(e);
         if (this.online) {
             this.sync()
         }
     }
 
-    setNetInfo = ({ type }) => {
-        this.online = isOnline(type)
+    setNetInfo = (e: ConnectionType | ConnectionInfo) => {
+        if(typeof e !== 'string') e = e.type;
+        this.online = isOnline(e)
         console.log('isOnline', this.online)
     }
 
-    startPoll = (callback: Function, interval: number = 30 * 1000) => {
+    /**
+     * 开启定时轮询
+     * @param {SyncCallback} callback 每次从远端拉取数据完成，写入本地存储后的回调
+     * @return 移除定时轮询函数
+     */
+    startPoll = (callback: SyncCallback, interval: number = 30 * 1000): (() => void) => {
         this.callback = callback;
 
         let poll = async () => {
             return this.sync().catch(err => {
+                //catch 防止报错中断 then 调用链
                 console.log('poll error', err)
             })
         }
@@ -62,6 +77,10 @@ export default class {
         }
 
         startTimeout()
+
+        return () => {
+            this.pollTimer && clearTimeout(this.pollTimer);
+        }
     }
 
     destroy = () => {
@@ -86,22 +105,25 @@ export default class {
         await this.noPushingPromise;
 
         if (this.online) {
-            let data = await Pool.get();
-            let remotes = await this.getList(this.activeKey)
+            let localList = await Pool.get();
+            let remoteMeta: (ContentsType & {id?: string})[] = await this.getList(this.activeKey)
 
-            remotes.forEach(remote => {
-                remote._id = remote.Key.replace(/([^\/]*)\/(\d+)/, '$2');
-                !data.find(item => item.id === remote._id) &&
-                    data.push({ id: remote._id } as TodoType)
+            remoteMeta.forEach(remote => {
+                remote.id = remote.Key.replace(/([^\/]*)\/([^\/]*)/, '$2');
+                if(!localList.find(item => item.id === remote.id)){
+                    //新数据：添加到本地列表
+                    localList.push({ id: remote.id } as TodoType)
+                }
             })
 
-            let promises = data.map(async item => {
-                let remote;
+            let promises = localList.map(async (item: TodoType & {_deleted?: true}) => {
+                let remoteItem;
                 if (item.data && item.data.finishedBy) {
                     //finished so that nothing to change
                     return item;
-                } else if (remote = remotes.find(({ _id }) => item.id === _id)) {
-                    if (remote.ETag === item.ETag) {
+                } else if (remoteItem = remoteMeta.find(({ id }) => item.id === id)) {
+                    if (remoteItem.ETag === item.ETag) {
+                        //数据未改变，不作处理
                         return item;
                     } else {
                         //something to add or modify
@@ -113,8 +135,10 @@ export default class {
                                 data: newItem.data
                             }
                         } else if (!item.data) {
+                            //新数据获取失败，进行删除
                             return {_deleted: true};
                         } else {
+                            //老数据获取失败，返回原数据
                             return item;
                         }
                     }
@@ -134,8 +158,7 @@ export default class {
                     }
                 }
             })
-            let result = await Promise.all(promises);
-            result = result.filter(item => !item._deleted)
+            let result = (await Promise.all(promises)).filter(item => !item._deleted) as TodoType[]
 
             //set to local storage
             await Pool.set(result);
@@ -147,22 +170,17 @@ export default class {
         }
     }
 
-    push = async (type: pushType, payload: Object) => {
+    push = async (type: pushType, todo: TodoType) => {
         await this.readyPromise;
         if (this.online) {
             await this.noPushingPromise;
-            let promise = new Promise((res, rej) => {
-                this.assignPush({ type, payload }).then(_ => {
-                    res();
-                }).catch(err => {
-                    console.log('push err', err);
-                    this.storePush(type, payload);
-                    res();
-                })
-            })
-            this.noPushingPromise = this.noPushingPromise.then(_ => promise);
+            this.noPushingPromise = this.assignPush({ type, todo }).catch((err: any) => {
+                console.log('push err', err);
+                //远程推送失败，本地保存待下一次推送
+                this.storePush({type, todo});
+            }).catch(() => {})
         } else {
-            this.storePush(type, payload)
+            this.storePush({type, todo})
         }
     }
 
@@ -171,32 +189,21 @@ export default class {
         if (this.online) {
             let queue = await this.get();
             if (queue.length) {
-                let toBreak = false;
-                for (let { type, payload } of queue.slice()) {
-                    await this.noPushingPromise;
-                    if (toBreak) break;
-                    let promise = new Promise((res, rej) => {
-                        this.assignPush({ type, payload }).then(_ => {
-                            queue.shift();
-                            res();
-                        }).catch(err => {
-                            console.log('push err', err);
-                            toBreak = true;
-                            res();
-                        })
+                await this.noPushingPromise;
+                for (let { type, todo } of queue.slice()) {
+                    this.noPushingPromise = this.assignPush({ type, todo }).then(() => {
+                        queue.shift();
+                    }).catch((err: any) => {
+                        console.log('push err', err);
                     })
-                    this.noPushingPromise = this.noPushingPromise ?
-                        this.noPushingPromise.then(_ => promise) :
-                        promise
+                    await this.noPushingPromise;
                 }
-                return this.noPushingPromise = this.noPushingPromise ?
-                    this.noPushingPromise.then(_ => this.set(queue)) :
-                    this.set(queue)
+                return this.noPushingPromise = this.set(queue)
             }
         }
     }
 
-    assignPush({ type, payload }: { type: pushType }) {
+    assignPush = ({ type, todo }: cacheQueueItem) => {
         let fn;
         switch (type) {
             case 'ADD': fn = this.pushAdd; break;
@@ -204,44 +211,44 @@ export default class {
             case 'FINISH': fn = this.pushFinish; break;
             case 'DELETE': fn = this.pushDelete; break;
         }
-        return fn.call(this, payload)
+        return fn.call(this, todo)
     }
 
-    storePush(type, payload) {
+    storePush = (e: cacheQueueItem) => {
         return this.get().then(list => {
-            list.push({ type, payload });
+            list.push(e);
             return this.set(list);
         });
     }
 
-    async pushAdd(obj) {
-        let ret = await this.os.upload(`/${this.activeKey}/${obj.id}`, obj.data);
+    async pushAdd(todo: TodoType) {
+        let ret = await this.os.upload(`/${this.activeKey}/${todo.id}`, todo.data);
         console.log('pushAdd', ret);
         if (ret.code === 200) {
-            ret.headers.etag && await Pool.modifyMeta(obj.id, { ETag: ret.headers.etag })
+            ret.headers.etag && await Pool.modifyMeta(todo.id, { ETag: ret.headers.etag })
         } else {
             throw new Error('fail')
         }
         return ret;
     }
 
-    async pushModify(obj) {
-        let ret = await this.os.upload(`/${this.activeKey}/${obj.id}`, obj.data);
+    async pushModify(todo: TodoType) {
+        let ret = await this.os.upload(`/${this.activeKey}/${todo.id}`, todo.data);
         console.log('pushModify', ret);
         if (ret.code === 200) {
-            ret.headers.etag && await Pool.modifyMeta(obj.id, { ETag: ret.headers.etag })
+            ret.headers.etag && await Pool.modifyMeta(todo.id, { ETag: ret.headers.etag })
         } else {
             throw new Error('fail')
         }
         return ret;
     }
 
-    async pushFinish(obj) {
-        let uploadRet = await this.os.upload(`/${this.finishedKey}/${obj.id}`, obj.data);
-        let deleteRet = await this.os.delete(`/${this.activeKey}/${obj.id}`);
+    async pushFinish(todo: TodoType) {
+        let uploadRet = await this.os.upload(`/${this.finishedKey}/${todo.id}`, todo.data);
+        let deleteRet = await this.os.delete(`/${this.activeKey}/${todo.id}`);
         console.log('pushFinish', uploadRet, deleteRet);
         if (uploadRet.code === 200) {
-            uploadRet.headers.etag && await Pool.modifyMeta(obj.id, { ETag: uploadRet.headers.etag })
+            uploadRet.headers.etag && await Pool.modifyMeta(todo.id, { ETag: uploadRet.headers.etag })
         }
         if (uploadRet.code !== 200 || ![200, 204].includes(deleteRet.code)) {
             throw new Error('fail')
@@ -249,8 +256,8 @@ export default class {
         return uploadRet;
     }
 
-    async pushDelete(obj) {
-        let deleteRet = await this.os.delete(`/${this.activeKey}/${obj.id}`);
+    async pushDelete(todo: TodoType) {
+        let deleteRet = await this.os.delete(`/${this.activeKey}/${todo.id}`);
         console.log('pushDelete', deleteRet);
         if (![200, 204].includes(deleteRet.code)) {
             throw new Error('fail')
@@ -258,13 +265,13 @@ export default class {
         return deleteRet;
     }
 
-    private get(): Promise<any> {
+    private get(): Promise<cacheQueueItem[]> {
         return AsyncStorage.getItem(this.key).then(value => {
             return value ? JSON.parse(value) : [];
         });
     }
 
-    private set(value): Promise<any> {
+    private set(value: cacheQueueItem[]): Promise<any> {
         return AsyncStorage.setItem(this.key, JSON.stringify(value));
     }
 

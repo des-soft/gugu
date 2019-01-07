@@ -5,7 +5,9 @@ import {
 import PopUp from './popup';
 
 export type AddModalProps = {
-    onAdd: Function
+    onAdd(text: string): void,
+    visible: boolean,
+    onClose(): any
 }
 
 export type AddModalState = {
@@ -13,42 +15,40 @@ export type AddModalState = {
 }
 
 export default class AddModal extends React.Component<AddModalProps, AddModalState> {
-    popUp: PopUp | null = null
     constructor(props: AddModalProps) {
         super(props);
         this.state = {
             text: ''
         }
     }
-    show() {
-        this.popUp && this.popUp.show();
-    }
-    setRef(ref: PopUp) {
-        this.popUp = ref
-    }
+
     onAdd = () => {
         if (this.state.text.trim()) {
             this.props.onAdd && this.props.onAdd(this.state.text.trim());
-            this.popUp && this.popUp.hide();
         }
     }
-    onClose = () => {
+
+    onCloseTransitionEnd = () => {
         this.setState({
             text: ''
         })
     }
+
     render() {
         return (
             <PopUp
-                ref={this.setRef.bind(this)}
-                modalBoxHeight={300}
-                modalBoxWidth={300}
-                modalBoxRadius={5}
-                modalBoxBg='#fff'
-                transparentIsClick={true}
+                visible={this.props.visible}
+                style={{
+                    width: 300,
+                    height: 300,
+                    borderRadius: 5,
+                    backgroundColor: '#fff',
+                }}
+                maskClosable={true}
                 duration={200}
-                offsetTop={100}
-                onCloseTransitionEnd={this.onClose}
+                slideDistance={100}
+                onClose={this.props.onClose}
+                onCloseTransitionEnd={this.onCloseTransitionEnd}
             >
                 <View
                     style={{
